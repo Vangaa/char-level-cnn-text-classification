@@ -34,7 +34,7 @@ class SentimentPredictior(object):
             saver = tf.train.Saver()
             saver.restore(self.session, checkpoint_file)
 
-    def fit(self, X_train, X_test,
+    def fit(self, X_train, y_train,
             num_epoch=10,
             batch_size=64, eval_every=100,
             val_data=None, checkpoint_every=100,
@@ -48,15 +48,15 @@ class SentimentPredictior(object):
             os.makedirs(checkpoint_dir)
 
         if val_data:
-            test_x, test_y = val_data[0], val_data[1]
+            test_X, test_y = val_data[0], val_data[1]
 
         counter_tr = 0
         last_loss = 1e10
         for epoch in range(1, num_epoch + 1):
             for i in range(0, X_train.shape[0], batch_size):
                 train_x = X_train[i:i + batch_size]
-                test_x = X_test[i:i + batch_size]
-                train_loss, summary = self.fit_batch(train_x, test_x,
+                train_y = y_train[i:i + batch_size]
+                train_loss, summary = self.fit_batch(train_x, train_y,
                                                      get_summary=True)
                 self.train_writer.add_summary(summary, counter_tr)
                 counter_tr += 1
@@ -71,12 +71,11 @@ class SentimentPredictior(object):
 
                 if counter_tr % checkpoint_every == 0:
                     save_file = os.path.join(checkpoint_dir,save_file_format.format(loss=last_loss, epoch=epoch))
-                    if save_model:
-                        path = saver.save(
-                            self.session,
-                            save_file,
-                            global_step=counter_tr
-                        )
+                    path = saver.save(
+                        self.session,
+                        save_file,
+                        global_step=counter_tr
+                    )
                     print("Model saved into {}\n".format(path))
 
     def fit_batch(self, X, y, get_summary=False):
